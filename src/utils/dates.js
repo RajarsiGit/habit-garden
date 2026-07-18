@@ -23,6 +23,21 @@ export function yesterdayKey() {
   return addDays(todayKey(), -1)
 }
 
+// 0 (Sunday) - 6 (Saturday), for aligning calendar grids.
+export function dayOfWeek(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(y, m - 1, d).getDay()
+}
+
+// The last `n` date keys ending today, oldest first.
+export function lastNDays(n) {
+  const days = []
+  for (let i = n - 1; i >= 0; i--) {
+    days.push(addDays(todayKey(), -i))
+  }
+  return days
+}
+
 // Walks backward from today through a set of completed date keys and returns
 // the current streak length, plus whether today still needs a check-in to
 // keep that streak alive.
@@ -51,12 +66,7 @@ export function computeStreak(completedDates) {
 // Last 7 days (oldest first) as {key, done} pairs, for a mini history strip.
 export function lastSevenDays(completedDates) {
   const completed = new Set(completedDates)
-  const days = []
-  for (let i = 6; i >= 0; i--) {
-    const key = addDays(todayKey(), -i)
-    days.push({ key, done: completed.has(key) })
-  }
-  return days
+  return lastNDays(7).map((key) => ({ key, done: completed.has(key) }))
 }
 
 export function longestStreak(completedDates) {

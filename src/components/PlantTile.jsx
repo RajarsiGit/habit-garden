@@ -1,7 +1,10 @@
 import Plant from './Plant'
+import Confetti from './Confetti'
+import { useGrowthPulse } from '../hooks/useGrowthPulse'
 
 export default function PlantTile({ habit, onToggleToday }) {
   const { name, streak, doneToday, wilted, stage, stageIndex, palette, atRisk } = habit
+  const justGrew = useGrowthPulse(stageIndex, 800)
 
   return (
     <button
@@ -14,6 +17,8 @@ export default function PlantTile({ habit, onToggleToday }) {
           🔥 {streak}
         </span>
       )}
+
+      <Confetti active={justGrew} colors={[palette.bloom, palette.center, palette.leaf]} />
 
       <Plant stageIndex={stageIndex} wilted={wilted} palette={palette} size={72} />
 

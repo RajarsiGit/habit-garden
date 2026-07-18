@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useGrowthPulse } from '../hooks/useGrowthPulse'
 
 const STEM_HEIGHT = [0, 26, 44, 62, 78, 92]
 const LEAF_PAIRS = [0, 1, 1, 2, 2, 3]
@@ -7,18 +7,7 @@ const BLOOM_RADIUS = [0, 0, 0, 0, 13, 18]
 // Renders one garden plant as an SVG that grows taller, sprouts more leaves,
 // and eventually blooms as `stageIndex` increases (driven by streak length).
 export default function Plant({ stageIndex, wilted, palette, size = 96 }) {
-  const prevStage = useRef(stageIndex)
-  const [justGrew, setJustGrew] = useState(false)
-
-  useEffect(() => {
-    if (stageIndex > prevStage.current) {
-      setJustGrew(true)
-      const t = setTimeout(() => setJustGrew(false), 700)
-      prevStage.current = stageIndex
-      return () => clearTimeout(t)
-    }
-    prevStage.current = stageIndex
-  }, [stageIndex])
+  const justGrew = useGrowthPulse(stageIndex, 700)
 
   const stemHeight = wilted ? STEM_HEIGHT[Math.min(stageIndex, 2)] : STEM_HEIGHT[stageIndex]
   const leafPairs = wilted ? Math.min(LEAF_PAIRS[stageIndex], 1) : LEAF_PAIRS[stageIndex]

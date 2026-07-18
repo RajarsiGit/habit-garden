@@ -1,7 +1,10 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from './useLocalStorage'
+import { useTodayKey } from './useTodayKey'
 import { computeStreak, lastSevenDays, longestStreak, todayKey } from '../utils/dates'
 import { stageForStreak, stageIndexForStreak, paletteForId } from '../utils/plant'
+
+const UNDO_WINDOW_MS = 6000
 
 function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -9,6 +12,9 @@ function makeId() {
 
 export function useHabits() {
   const [habits, setHabits] = useLocalStorage('habit-garden:habits', [])
+  const today = useTodayKey()
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const undoTimer = useRef(null)
 
   const addHabit = useCallback((name) => {
     const trimmed = name.trim()
@@ -19,8 +25,43 @@ export function useHabits() {
     ])
   }, [setHabits])
 
+  const renameHabit = useCallback((id, name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setHabits((prev) => prev.map((h) => (h.id === id ? { ...h, name: trimmed } : h)))
+  }, [setHabits])
+
   const deleteHabit = useCallback((id) => {
+    const index = habits.findIndex((h) => h.id === id)
+    if (index === -1) return
+    clearTimeout(undoTimer.current)
+    setPendingDelete({ habit: habits[index], index })
+    undoTimer.current = setTimeout(() => setPendingDelete(null), UNDO_WINDOW_MS)
     setHabits((prev) => prev.filter((h) => h.id !== id))
+  }, [habits, setHabits])
+
+  const undoDelete = useCallback(() => {
+    if (!pendingDelete) return
+    clearTimeout(undoTimer.current)
+    setHabits((prev) => {
+      const next = [...prev]
+      next.splice(Math.min(pendingDelete.index, next.length), 0, pendingDelete.habit)
+      return next
+    })
+    setPendingDelete(null)
+  }, [pendingDelete, setHabits])
+
+  const reorderHabits = useCallback((fromId, toId) => {
+    if (fromId === toId) return
+    setHabits((prev) => {
+      const fromIndex = prev.findIndex((h) => h.id === fromId)
+      const toIndex = prev.findIndex((h) => h.id === toId)
+      if (fromIndex === -1 || toIndex === -1) return prev
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
   }, [setHabits])
 
   const toggleToday = useCallback((id) => {
@@ -58,7 +99,7 @@ export function useHabits() {
         palette: paletteForId(habit.id),
       }
     })
-  }, [habits])
+  }, [habits, today])
 
   const stats = useMemo(() => {
     const totalStreakDays = garden.reduce((sum, h) => sum + h.streak, 0)
@@ -72,5 +113,15 @@ export function useHabits() {
     }
   }, [garden])
 
-  return { habits: garden, addHabit, deleteHabit, toggleToday, stats }
+  return {
+    habits: garden,
+    addHabit,
+    renameHabit,
+    deleteHabit,
+    undoDelete,
+    pendingDelete,
+    reorderHabits,
+    toggleToday,
+    stats,
+  }
 }

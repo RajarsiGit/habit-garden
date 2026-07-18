@@ -74,3 +74,38 @@ svg[role='img'] g,
 svg[role='img'] path {
   animation-fill-mode: both;
 }
+
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(var(--rot)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.confetti-particle {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  animation: confetti-burst 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plant-stem-grow,
+  .plant-leaf-pop,
+  .plant-bloom-pop {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

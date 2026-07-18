@@ -1,11 +1,30 @@
+import { useState } from 'react'
 import { useHabits } from './hooks/useHabits'
 import Garden from './components/Garden'
 import AddHabitForm from './components/AddHabitForm'
 import HabitList from './components/HabitList'
 import StatsBar from './components/StatsBar'
+import StatsView from './components/StatsView'
+import UndoToast from './components/UndoToast'
+
+const TABS = [
+  { id: 'garden', label: '🌱 Garden' },
+  { id: 'stats', label: '📊 Stats' },
+]
 
 export default function App() {
-  const { habits, addHabit, deleteHabit, toggleToday, stats } = useHabits()
+  const {
+    habits,
+    addHabit,
+    renameHabit,
+    deleteHabit,
+    undoDelete,
+    pendingDelete,
+    reorderHabits,
+    toggleToday,
+    stats,
+  } = useHabits()
+  const [view, setView] = useState('garden')
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-white dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
@@ -23,18 +42,51 @@ export default function App() {
           <StatsBar stats={stats} />
         </div>
 
-        <section className="mb-8">
-          <Garden habits={habits} onToggleToday={toggleToday} />
-        </section>
+        <div className="mb-6 flex justify-center gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800" role="tablist">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={view === tab.id}
+              onClick={() => setView(tab.id)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                view === tab.id
+                  ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <section className="mb-4">
-          <AddHabitForm onAdd={addHabit} />
-        </section>
+        {view === 'garden' ? (
+          <>
+            <section className="mb-8">
+              <Garden habits={habits} onToggleToday={toggleToday} />
+            </section>
 
-        <section>
-          <HabitList habits={habits} onToggleToday={toggleToday} onDelete={deleteHabit} />
-        </section>
+            <section className="mb-4">
+              <AddHabitForm onAdd={addHabit} />
+            </section>
+
+            <section>
+              <HabitList
+                habits={habits}
+                onToggleToday={toggleToday}
+                onDelete={deleteHabit}
+                onRename={renameHabit}
+                onReorder={reorderHabits}
+              />
+            </section>
+          </>
+        ) : (
+          <StatsView habits={habits} />
+        )}
       </div>
+
+      <UndoToast pendingDelete={pendingDelete} onUndo={undoDelete} />
     </div>
   )
 }

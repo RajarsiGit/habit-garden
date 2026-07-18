@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 function WeekDots({ week }) {
@@ -16,13 +18,31 @@ function WeekDots({ week }) {
   )
 }
 
-export default function HabitList({ habits, onToggleToday, onDelete }) {
+export default function HabitList({ habits, onToggleToday, onDelete, onRename, onReorder }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draftName, setDraftName] = useState('')
+  const [draggedId, setDraggedId] = useState(null)
+
   if (habits.length === 0) return null
 
-  function handleDelete(habit) {
-    if (window.confirm(`Delete "${habit.name}"? This removes its whole history.`)) {
-      onDelete(habit.id)
-    }
+  function startEditing(habit) {
+    setEditingId(habit.id)
+    setDraftName(habit.name)
+  }
+
+  function commitEdit() {
+    if (editingId) onRename(editingId, draftName)
+    setEditingId(null)
+  }
+
+  function handleEditKeyDown(e) {
+    if (e.key === 'Enter') commitEdit()
+    if (e.key === 'Escape') setEditingId(null)
+  }
+
+  function moveWithNeighbor(habit, index, delta) {
+    const neighbor = habits[index + delta]
+    if (neighbor) onReorder(habit.id, neighbor.id)
   }
 
   return (
@@ -36,8 +56,46 @@ export default function HabitList({ habits, onToggleToday, onDelete }) {
       </div>
 
       <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
-        {habits.map((habit) => (
-          <li key={habit.id} className="flex items-center gap-3 px-4 py-3">
+        {habits.map((habit, index) => (
+          <li
+            key={habit.id}
+            className={`flex items-center gap-2 px-4 py-3 transition ${
+              draggedId === habit.id ? 'opacity-40' : ''
+            }`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              const fromId = e.dataTransfer.getData('text/plain')
+              if (fromId) onReorder(fromId, habit.id)
+              setDraggedId(null)
+            }}
+          >
+            <span
+              role="button"
+              tabIndex={0}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', habit.id)
+                e.dataTransfer.effectAllowed = 'move'
+                setDraggedId(habit.id)
+              }}
+              onDragEnd={() => setDraggedId(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  moveWithNeighbor(habit, index, -1)
+                } else if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  moveWithNeighbor(habit, index, 1)
+                }
+              }}
+              aria-label={`Reorder ${habit.name}. Use arrow keys to move up or down, or drag.`}
+              title="Drag to reorder"
+              className="shrink-0 cursor-grab select-none px-1 text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 active:cursor-grabbing dark:text-slate-600"
+            >
+              ⠿
+            </span>
+
             <button
               type="button"
               onClick={() => onToggleToday(habit.id)}
@@ -52,9 +110,28 @@ export default function HabitList({ habits, onToggleToday, onDelete }) {
             </button>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
-                {habit.name}
-              </p>
+              {editingId === habit.id ? (
+                <input
+                  autoFocus
+                  type="text"
+                  value={draftName}
+                  maxLength={60}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={handleEditKeyDown}
+                  aria-label={`Rename ${habit.name}`}
+                  className="w-full rounded-md border border-emerald-300 bg-white px-1.5 py-0.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:bg-slate-800 dark:text-slate-200"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditing(habit)}
+                  aria-label={`Rename ${habit.name}`}
+                  className="truncate rounded text-left text-sm font-medium text-slate-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:text-slate-200"
+                >
+                  {habit.name}
+                </button>
+              )}
               <p className="text-xs text-slate-400">
                 {habit.stage.label} · {habit.streak} day streak · best {habit.longest}
               </p>
@@ -70,7 +147,7 @@ export default function HabitList({ habits, onToggleToday, onDelete }) {
 
             <button
               type="button"
-              onClick={() => handleDelete(habit)}
+              onClick={() => onDelete(habit.id)}
               aria-label={`Delete ${habit.name}`}
               className="shrink-0 rounded-lg px-2 py-1 text-slate-300 transition hover:bg-red-50 hover:text-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 dark:hover:bg-red-950"
             >
