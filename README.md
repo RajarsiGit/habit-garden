@@ -15,12 +15,15 @@ its streak lengthens — and wilts if you miss a day.
   missed.
 - **Stats view.** A 12-week completion heatmap and a streak leaderboard
   across all your habits.
+- **At-a-glance stats bar.** Habit count, how many you've watered today, how
+  many are blooming, and total streak days across the whole garden.
 - **Rename, reorder, undo.** Drag (or use arrow keys on the handle) to
   reorder habits, click a name to rename it, and deleting shows a 6-second
   undo toast instead of a confirm dialog.
 - **Installable.** Works as a PWA — install it to your home screen or
   desktop; the app shell is cached for offline use (your data lives in
   `localStorage`, not a server, so there's nothing else to sync).
+- **Dark mode.** Follows your system's light/dark preference automatically.
 - **Respects `prefers-reduced-motion`.** All grow animations and confetti are
   skipped for users who've asked for less motion.
 
@@ -34,6 +37,10 @@ its streak lengthens — and wilts if you miss a day.
 
 ## Getting started
 
+Requires Node 20.19+ (`vite`/`vitest` are pinned below their latest majors to
+stay compatible with older Node 20 patch versions — see
+[CLAUDE.md](CLAUDE.md#toolchain-constraint) before bumping either).
+
 ```bash
 npm install
 npm run dev
@@ -41,9 +48,14 @@ npm run dev
 
 ```bash
 npm test          # run the test suite once
+npx vitest        # watch mode
 npm run build     # production build (also generates the PWA assets)
 npm run preview   # serve the production build locally
 ```
+
+There's no linter configured yet, and tests currently cover
+`src/utils/dates.js`, `plant.js`, and `heatmap.js` — no component-level tests
+(would need jsdom + Testing Library).
 
 ## How it works
 
