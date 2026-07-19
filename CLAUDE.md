@@ -18,6 +18,63 @@ There is no linter configured in this project currently. Tests cover
 no component/rendering tests yet (would need jsdom + Testing Library, not
 currently installed).
 
+## Android app (Capacitor)
+
+The app also ships as a native Android shell via Capacitor — same React
+codebase, no separate mobile source tree. `android/` is the generated native
+project (gradle files, `AndroidManifest.xml`, `res/`); most of it is
+regenerated tooling, not hand-edited source, though `android/app/src/main/res`
+icons/splash screens below are checked in as real assets.
+
+- `npm run android:sync` — builds the web app in `capacitor` mode (see
+  below) and runs `npx cap sync android` to copy the fresh bundle + plugin
+  config into `android/app/src/main/assets/public`.
+- `npm run android:open` — opens the project in Android Studio
+  (`npx cap open android`), needed to actually build/run/sign an APK/AAB.
+  Building requires Android Studio + an Android SDK and a JDK 17+ (this repo
+  was scaffolded in an environment with only JDK 8 and no `ANDROID_HOME`
+  installed — install both before opening the project).
+- `capacitor.config.json` — `appId` is `com.habitgarden.app`; per Play Store
+  norms treat this as permanent once published.
+
+**The PWA service worker is intentionally excluded from the Android build.**
+`vite.config.js` only registers the `VitePWA` plugin when `mode !==
+'capacitor'`, so `vite build --mode capacitor` (what `android:sync` runs)
+emits no `sw.js`/`registerSW.js`. Rationale: the Capacitor WebView already
+loads the bundled `dist/` assets fresh from the APK on every app update, so a
+Workbox SW layered on top only adds risk of serving stale content-hashed
+`assets/index-*.js` files if the SW's own update cycle lags the app update —
+no caching benefit to offset that. Plain `npm run build` (web/PWA deploys)
+is unaffected and still emits the service worker as before.
+
+**Habit data storage is unchanged** — `localStorage` inside the Capacitor
+WebView, same as the browser. It persists across app restarts and updates
+like any other Android app's WebView storage, but is cleared if the user
+clears the app's storage/data from Android settings (same caveat as clearing
+site data in a browser).
+
+**Icons/splash screens** in `android/app/src/main/res/mipmap-*` and
+`drawable-*` were generated from `design/icon-source.svg` (the same source
+used for the PWA icons in `public/icons/`), via a temporary `@capacitor/assets`
++ `sharp` pipeline — neither is a persistent dependency. To regenerate after
+editing the SVG:
+
+```bash
+npm install -D sharp @capacitor/assets
+mkdir assets
+node -e "
+const sharp = require('sharp');
+const svg = require('fs').readFileSync('design/icon-source.svg');
+Promise.all([
+  sharp(svg, { density: 384 }).resize(1024, 1024).png().toFile('assets/icon.png'),
+  sharp(svg, { density: 384 }).resize(2732, 2732).png().toFile('assets/splash.png'),
+]);
+"
+npx capacitor-assets generate --android
+rm -rf assets
+npm uninstall sharp @capacitor/assets
+```
+
 ## Toolchain constraint
 
 `vite` and `vitest` are pinned below their latest majors (currently 6.x/3.x,

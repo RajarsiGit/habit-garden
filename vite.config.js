@@ -4,11 +4,15 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
+    // Skip the service worker for the Capacitor (native Android) build: the
+    // app shell is already bundled into the APK and refreshed on every app
+    // update, so a Workbox SW on top of it only risks serving stale
+    // content-hashed assets after an update instead of adding any benefit.
+    mode !== 'capacitor' && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
@@ -37,4 +41,4 @@ export default defineConfig({
       },
     }),
   ],
-})
+}))

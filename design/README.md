@@ -27,3 +27,8 @@ npm uninstall sharp
 
 Keep flower content within the inner ~80% of the canvas (the maskable safe
 zone) — Android/other OSes crop icon corners to their own mask shapes.
+
+The native Android app's launcher icons and splash screens
+(`android/app/src/main/res/mipmap-*`, `drawable-*`) are generated from this
+same SVG too, via a separate temporary pipeline — see the "Android app
+(Capacitor)" section in `CLAUDE.md` for the regeneration command.

@@ -23,6 +23,8 @@ its streak lengthens — and wilts if you miss a day.
 - **Installable.** Works as a PWA — install it to your home screen or
   desktop; the app shell is cached for offline use (your data lives in
   `localStorage`, not a server, so there's nothing else to sync).
+- **Native Android app.** The same codebase also ships as a Capacitor-wrapped
+  Android app — see [Android app](#android-app) below.
 - **Dark mode.** Follows your system's light/dark preference automatically.
 - **Respects `prefers-reduced-motion`.** All grow animations and confetti are
   skipped for users who've asked for less motion.
@@ -33,6 +35,7 @@ its streak lengthens — and wilts if you miss a day.
 - Tailwind CSS v4 (via `@tailwindcss/vite`)
 - Vitest for the streak/growth-stage/heatmap logic
 - `vite-plugin-pwa` for the manifest + service worker
+- Capacitor for the native Android shell
 - State persisted to `localStorage`, no backend
 
 ## Getting started
@@ -80,6 +83,22 @@ There's no linter configured yet, and tests currently cover
 
 See [CLAUDE.md](CLAUDE.md) for the full architecture notes, and
 [design/README.md](design/README.md) for how the app icons are generated.
+
+## Android app
+
+The app also builds as a native Android app via [Capacitor](https://capacitorjs.com/),
+wrapping the same React code — no separate mobile codebase.
+
+```bash
+npm run android:sync   # build the web app and sync it into android/
+npm run android:open   # open the project in Android Studio
+```
+
+Building/running the APK requires Android Studio with an Android SDK and a
+JDK 17+ installed. The PWA service worker is deliberately skipped in this
+build (the APK already bundles fresh assets on every app update); see the
+"Android app (Capacitor)" section in [CLAUDE.md](CLAUDE.md) for details on
+that and on regenerating the launcher icons/splash screens.
 
 ## License
 
